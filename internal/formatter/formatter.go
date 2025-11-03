@@ -38,26 +38,37 @@ func (f *formatter) format() (string, error) {
 
 	inBlockComment := false
 	inFunction := false
+	commentIndent := 0 // Track the original indentation of the comment block
 
 	for i, line := range f.lines {
 		trimmed := strings.TrimSpace(line)
 
-		// Handle empty lines
+		// Handle empty lines - preserve them
 		if trimmed == "" {
-			// Only keep empty line if not at start and not multiple in a row
-			if i > 0 && (i == 0 || f.lines[i-1] != "") {
-				result.WriteString("\n")
-			}
+			result.WriteString("\n")
 			continue
 		}
 
-		// Handle block comments
+		// Handle block comments - preserve internal formatting
 		if strings.HasPrefix(trimmed, "/*") {
 			inBlockComment = true
+			// Calculate how much this line is indented in the original
+			commentIndent = len(line) - len(strings.TrimLeft(line, " \t"))
 		}
 		if inBlockComment {
-			result.WriteString(strings.Repeat(" ", f.indent*indentWidth))
-			result.WriteString(trimmed)
+			// Preserve the comment's internal structure
+			// Remove only the base indentation that was there originally
+			// Add our desired indentation
+			// Keep any additional spacing that's part of the comment format
+			if len(line) >= commentIndent {
+				contentAfterBaseIndent := line[commentIndent:]
+				result.WriteString(strings.Repeat(" ", f.indent*indentWidth))
+				result.WriteString(contentAfterBaseIndent)
+			} else {
+				// Line is shorter than expected, just write it
+				result.WriteString(strings.Repeat(" ", f.indent*indentWidth))
+				result.WriteString(trimmed)
+			}
 			result.WriteString("\n")
 			if strings.HasSuffix(trimmed, "*/") {
 				inBlockComment = false
@@ -65,7 +76,7 @@ func (f *formatter) format() (string, error) {
 			continue
 		}
 
-		// Handle line comments
+		// Handle line comments - preserve original formatting
 		if strings.HasPrefix(trimmed, "//") {
 			result.WriteString(strings.Repeat(" ", f.indent*indentWidth))
 			result.WriteString(trimmed)
@@ -111,7 +122,12 @@ func (f *formatter) format() (string, error) {
 		}
 	}
 
-	return result.String(), nil
+	// Remove trailing newlines but keep exactly one
+	output := strings.TrimRight(result.String(), "\n")
+	if output != "" {
+		output += "\n"
+	}
+	return output, nil
 }
 
 func (f *formatter) formatLine(line string) string {
