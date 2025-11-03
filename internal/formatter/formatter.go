@@ -143,16 +143,42 @@ func (f *formatter) formatLine(line string) string {
 
 func (f *formatter) formatInherit(line string) string {
 	// Format: inherit "path";
-	re := regexp.MustCompile(`((?:private|public|static|nosave|nomask|protected)\s+)*inherit\s+(.+?);`)
-	if matches := re.FindStringSubmatch(line); matches != nil {
-		modifiers := strings.TrimSpace(matches[1])
-		path := strings.TrimSpace(matches[2])
+	// Extract modifiers and inherit statement
+	modifiers := []string{}
+	modKeywords := []string{"private", "public", "static", "nosave", "nomask", "protected"}
 
-		if modifiers != "" {
-			return modifiers + " inherit " + path + ";"
+	words := strings.Fields(line)
+	pathStart := -1
+
+	for i, word := range words {
+		isModifier := false
+		for _, mod := range modKeywords {
+			if word == mod {
+				modifiers = append(modifiers, word)
+				isModifier = true
+				break
+			}
+		}
+		if !isModifier {
+			if word == "inherit" {
+				pathStart = i + 1
+				break
+			}
+		}
+	}
+
+	if pathStart > 0 && pathStart < len(words) {
+		// Reconstruct the path (everything after inherit)
+		path := strings.Join(words[pathStart:], " ")
+		path = strings.TrimSuffix(path, ";")
+		path = strings.TrimSpace(path)
+
+		if len(modifiers) > 0 {
+			return strings.Join(modifiers, " ") + " inherit " + path + ";"
 		}
 		return "inherit " + path + ";"
 	}
+
 	return line
 }
 
@@ -179,8 +205,12 @@ func (f *formatter) formatVariable(line string) string {
 	if matches := re.FindStringSubmatch(line); matches != nil {
 		left := strings.TrimSpace(matches[1])
 		right := strings.TrimSpace(matches[2])
-		return left + " = " + right
+		line = left + " = " + right
 	}
+
+	// Add space after commas in variable lists
+	line = regexp.MustCompile(`,(\S)`).ReplaceAllString(line, ", $1")
+
 	return line
 }
 
@@ -249,6 +279,9 @@ func (f *formatter) formatDefault(line string) string {
 	for _, op := range operators {
 		line = strings.ReplaceAll(line, op, " "+op+" ")
 	}
+
+	// Add space after commas (but not in strings - simplified)
+	line = regexp.MustCompile(`,(\S)`).ReplaceAllString(line, ", $1")
 
 	// Clean up multiple spaces
 	re := regexp.MustCompile(`\s+`)
