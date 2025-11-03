@@ -1,19 +1,24 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/fluffos/lpcfmt/internal/formatter"
 )
 
+const version = "1.0.0"
+
 var (
-	writeFlag = flag.Bool("w", false, "write result to (source) file instead of stdout")
-	listFlag  = flag.Bool("l", false, "list files whose formatting differs")
-	diffFlag  = flag.Bool("d", false, "display diffs instead of rewriting files")
+	writeFlag   = flag.Bool("w", false, "write result to (source) file instead of stdout")
+	listFlag    = flag.Bool("l", false, "list files whose formatting differs")
+	diffFlag    = flag.Bool("d", false, "display diffs instead of rewriting files")
+	versionFlag = flag.Bool("version", false, "print version information")
 )
 
 func main() {
@@ -22,6 +27,11 @@ func main() {
 		flag.PrintDefaults()
 	}
 	flag.Parse()
+
+	if *versionFlag {
+		fmt.Printf("lpcfmt version %s\n", version)
+		return
+	}
 
 	if flag.NArg() == 0 {
 		// Read from stdin
@@ -102,6 +112,12 @@ func processFile(filename string) error {
 		if string(src) != formatted {
 			fmt.Println(filename)
 		}
+	} else if *diffFlag {
+		if string(src) != formatted {
+			if err := showDiff(filename, src, []byte(formatted)); err != nil {
+				return err
+			}
+		}
 	} else {
 		fmt.Print(formatted)
 	}
@@ -127,4 +143,55 @@ func processDirectory(dirname string) error {
 
 		return nil
 	})
+}
+
+// showDiff displays a unified diff between original and formatted content
+func showDiff(filename string, original, formatted []byte) error {
+	// Try to use diff command if available
+	cmd := exec.Command("diff", "-u", "/dev/stdin", filename)
+	cmd.Stdin = bytes.NewReader(formatted)
+
+	// Write original to a temp file for comparison
+	tmpfile, err := os.CreateTemp("", "lpcfmt-*.lpc")
+	if err != nil {
+		// Fallback to simple diff if temp file fails
+		return simpleDiff(filename, original, formatted)
+	}
+	defer os.Remove(tmpfile.Name())
+
+	if _, err := tmpfile.Write(original); err != nil {
+		tmpfile.Close()
+		return simpleDiff(filename, original, formatted)
+	}
+	tmpfile.Close()
+
+	cmd = exec.Command("diff", "-u", tmpfile.Name(), "-")
+	cmd.Stdin = bytes.NewReader(formatted)
+
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = os.Stderr
+
+	// diff returns exit code 1 when files differ, which is expected
+	_ = cmd.Run()
+
+	if out.Len() > 0 {
+		// Replace temp filename with actual filename in output
+		output := bytes.ReplaceAll(out.Bytes(), []byte(tmpfile.Name()), []byte(filename+".orig"))
+		output = bytes.ReplaceAll(output, []byte("---"), []byte(fmt.Sprintf("--- %s.orig", filename)))
+		output = bytes.ReplaceAll(output, []byte("+++"), []byte(fmt.Sprintf("+++ %s", filename)))
+		fmt.Print(string(output))
+	}
+
+	return nil
+}
+
+// simpleDiff provides a basic diff when the diff command is not available
+func simpleDiff(filename string, original, formatted []byte) error {
+	fmt.Printf("diff %s %s\n", filename, filename)
+	fmt.Printf("--- %s.orig\n", filename)
+	fmt.Printf("+++ %s\n", filename)
+	fmt.Println("@@ (formatted version) @@")
+	fmt.Print(string(formatted))
+	return nil
 }

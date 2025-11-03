@@ -33,12 +33,28 @@ lpcfmt myfile.lpc
 # Format a file in place
 lpcfmt -w myfile.lpc
 
+# List files that need formatting
+lpcfmt -l myfile.lpc
+
+# Show diff of formatting changes
+lpcfmt -d myfile.lpc
+
 # Format from stdin
 cat myfile.lpc | lpcfmt
 
 # Format all LPC files in a directory
-lpcfmt -w path/to/directory/...
+lpcfmt -w path/to/directory/
+
+# Show version
+lpcfmt --version
 ```
+
+### Command-line Flags
+
+- `-w` - Write result to source file instead of stdout
+- `-l` - List files whose formatting differs from lpcfmt's
+- `-d` - Display diffs instead of rewriting files
+- `--version` - Print version information
 
 ## Building
 
