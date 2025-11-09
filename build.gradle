@@ -1,0 +1,56 @@
+plugins {
+    id 'antlr'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    antlr "org.antlr:antlr4:4.13.0"
+}
+
+// Configure ANTLR to generate Go code
+generateGrammarSource {
+    maxHeapSize = "64m"
+    arguments += [
+        '-Dlanguage=Go',
+        '-visitor',
+        '-package', 'parser',
+        '-o', 'parser'
+    ]
+}
+
+// Task to generate Go parser from grammar files
+task generateGoParser(type: JavaExec) {
+    description = 'Generate Go parser code from ANTLR grammar files'
+    group = 'build'
+
+    classpath = configurations.antlr
+    mainClass = 'org.antlr.v4.Tool'
+
+    args = [
+        '-Dlanguage=Go',
+        '-visitor',
+        '-package', 'parser',
+        '-o', 'parser',
+        'lpc.g4'
+    ]
+
+    inputs.files('lpc.g4', 'literal.g4', 'lpcid.g4')
+    outputs.dir('parser')
+
+    doFirst {
+        delete 'parser'
+        mkdir 'parser'
+    }
+}
+
+// Clean task to remove generated files
+clean {
+    delete 'parser'
+    delete '.antlr'
+}
+
+// Make the default build task generate the Go parser
+defaultTasks 'generateGoParser'

@@ -58,23 +58,23 @@ lpcfmt --version
 
 ## Building
 
-### Go Version (Recommended)
+### Go Version with ANTLR Parser (Current)
 
 ```bash
-# Generate parser from ANTLR grammar
-make generate
+# Generate Go parser from ANTLR grammar using Gradle
+./gradlew generateGoParser
 
 # Build the formatter
-make build
-
-# Or use go directly
 go build -o lpcfmt ./cmd/lpcfmt
+
+# Or use Windows batch file
+gradlew.bat generateGoParser
 ```
 
-### C++ Version
+### Legacy C++ Version
 
 ```bash
-# Build with CMake
+# Build with CMake (experimental, not actively maintained)
 mkdir build && cd build
 cmake ..
 make
@@ -127,12 +127,22 @@ go test -v ./internal/formatter/ -run TestFluffOS
 
 ### Test Results
 
-- **36+ test cases** covering all LPC constructs
-- **18 real-world test files** from FluffOS driver
-- **100% pass rate** on all tests
-- **Validates**: brace matching, semicolon preservation, comment preservation
+- **48+ test files** from real-world LPC code
+- **Auto-discovery** of all `.c` and `.lpc` files in `tests/` directory
+- **Idempotency testing** ensures stable formatting
+- **Multiple sources**: FluffOS, Dead Souls, Lima, Nightmare, NT7, XKX100
+- **Validates**: syntax preservation, comment retention, formatting stability
 
-See [TESTING.md](TESTING.md) for detailed testing documentation.
+See [tests/README.md](tests/README.md) for test file organization and [TESTING.md](TESTING.md) for detailed testing documentation.
+
+## For AI Assistants & Developers
+
+See **[CLAUDE.md](CLAUDE.md)** for a comprehensive development guide including:
+- ANTLR parser generation
+- Complete testing instructions
+- Project architecture
+- Development workflow
+- Troubleshooting guide
 
 ## Development
 
@@ -140,10 +150,14 @@ The project structure:
 - `lpc.g4`, `literal.g4`, `lpcid.g4` - ANTLR grammar definitions
 - `cmd/lpcfmt/` - Go CLI implementation
 - `internal/formatter/` - Core formatting logic and tests
-- `main.cpp` - C++ implementation (experimental)
+  - `formatter.go` - Main formatter interface
+  - `antlr_formatter.go` - ANTLR-based formatter implementation
+- `parser/` - Generated Go parser code (from ANTLR, auto-generated)
 - `tests/` - Test LPC files
   - `tests/fluffos/` - Real FluffOS driver test files
-- `gen/` - Generated parser code (from ANTLR)
+  - `tests/mudlibs/` - MUD library test files
+- `build.gradle`, `gradlew` - Gradle wrapper for parser generation
+- `main.cpp` - C++ implementation (experimental, not actively maintained)
 
 ## Contributing
 

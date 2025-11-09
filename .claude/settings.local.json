@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make generate:*)",
+      "Bash(go test:*)",
+      "Bash(java -version:*)",
+      "Bash(gradle --version:*)",
+      "Bash(./gradlew.bat:*)",
+      "Bash(go get:*)",
+      "Bash(go build:*)",
+      "Bash(./lpcfmt.exe:*)",
+      "Bash(cat:*)",
+      "Bash(test_fmt.go)",
+      "Bash(go run:*)",
+      "Bash(for dir in fluffos mudlibs lpc-test nt7 xkx100)",
+      "Bash(do if [ -d \"$dir\" ])",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(tee:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
