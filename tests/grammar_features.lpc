@@ -1,0 +1,117 @@
+// Test file for new grammar features
+// Tests DOT operator, function literals, default arguments
+
+// Test 1: DOT operator for member access
+class Point {
+    int x;
+    int y;
+}
+
+void test_dot_operator() {
+    Point p;
+    p.x = 10;
+    p.y = 20;
+    int sum = p.x + p.y;
+
+    // Nested member access
+    object player;
+    player.inventory.gold = 100;
+    player.stats.health = player.stats.max_health;
+}
+
+// Test 2: ARROW operator (already supported, for comparison)
+void test_arrow_operator() {
+    object obj;
+    obj->move(10, 20);
+    obj->set_property("name", "test");
+    string name = obj->query_property("name");
+}
+
+// Test 3: Function literals/closures
+void test_function_literals() {
+    mixed result;
+    mixed *arr = ({ 1, 2, 3, 4, 5 });
+
+    // Simple closure
+    result = filter(arr, (: $1 > 2 :));
+
+    // Closure with multiple parameters
+    result = map(arr, (: $1 * $2 :), 10);
+
+    // Closure with comma
+    result = map(arr, (: $1, $2 :));
+
+    // Efun override in closure
+    result = filter(arr, (: efun::sizeof($1) :));
+}
+
+// Test 4: Default argument values
+void func_with_defaults(int x = 0, string s = "default", object ob = 0) {
+    return x + strlen(s);
+}
+
+int add(int a, int b = 10) {
+    return a + b;
+}
+
+void test_default_args() {
+    func_with_defaults();
+    func_with_defaults(5);
+    func_with_defaults(5, "hello");
+    func_with_defaults(5, "hello", this_object());
+
+    add(5);      // uses default b=10
+    add(5, 20);  // overrides default
+}
+
+// Test 5: Combined usage
+void complex_test() {
+    object *players = get_players();
+
+    // Filter players with health > 50 using closure and member access
+    object *healthy = filter(players, (: $1.health > 50 :));
+
+    // Map to get player names with arrow operator
+    string *names = map(healthy, (: $1->query_name() :));
+
+    // Sort with closure
+    players = sort_array(players, (: $1.score - $2.score :));
+
+    // Function with default parameter and member access
+    void heal_player(object player, int amount = 10) {
+        player.health += amount;
+        if (player.health > player.max_health) {
+            player.health = player.max_health;
+        }
+    }
+}
+
+// Test 6: Ternary operator with member access
+int get_effective_damage(object weapon, object target) {
+    return weapon.damage > 0 ?
+           weapon.damage - target.armor :
+           0;
+}
+
+// Test 7: All together
+void comprehensive_test() {
+    class Stats {
+        int strength;
+        int dexterity;
+        int intelligence;
+    }
+
+    Stats s;
+    s.strength = 10;
+    s.dexterity = 15;
+
+    // DOT, ternary, and default args
+    int bonus = s.strength > s.dexterity ? s.strength : s.dexterity;
+
+    // Function literal with member access
+    mixed result = filter(({ s }), (: $1.strength > 5 :));
+
+    // Complex expression
+    int value = s.strength * 2 + s.dexterity / 2 +
+                (s.intelligence > 10 ? 5 : 0);
+}

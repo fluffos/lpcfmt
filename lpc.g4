@@ -103,9 +103,12 @@ L_DEC: '--';
 L_EQ: '==';
 L_NE: '!=';
 L_ARROW: '->';
+L_DOT: '.';
 L_COLON_COLON: '::';
 L_ARRAY_OPEN: '({';
 L_MAPPING_OPEN: '([';
+L_FUNCTION_OPEN: '(:';
+L_FUNCTION_CLOSE: ':)';
 
 program: (preprocessor_invoke | def | ';')* EOF;
 
@@ -160,9 +163,13 @@ basic_type
            | opt_atomic_type L_ARRAY;
 arg_type : basic_type
            | basic_type ref;
-new_arg  : arg_type optional_star
-           | arg_type optional_star new_local_name
-           | new_local_name;
+new_arg  : arg_type optional_star optional_default_arg_value
+           | arg_type optional_star new_local_name optional_default_arg_value
+           | new_local_name optional_default_arg_value;
+
+optional_default_arg_value
+         : /* empty */
+           | L_ASSIGN expr0;
 argument : ( argument_list | argument_list L_DOT_DOT_DOT )?;
 argument_list
          : new_arg ( ',' new_arg )*;
@@ -297,8 +304,8 @@ assoc_pair
          : expr0 ':' expr0;
 lvalue   : expr4;
 l_new_function_open
-         : '(:'
-           | '(:' efun_override;
+         : L_FUNCTION_OPEN
+           | L_FUNCTION_OPEN efun_override;
 
 expr3:  //| L_DEFINED_NAME
                         L_IDENTIFIER
@@ -309,9 +316,9 @@ expr3:  //| L_DEFINED_NAME
                        | catch_block
                        | tree_block
                        | L_BASIC_TYPE '(' argument ')' block
-                       | l_new_function_open ':' ')'
-                       | l_new_function_open ',' expr_list2 ':' ')'
-                       | '(:' comma_expr ':' ')'
+                       | l_new_function_open L_FUNCTION_CLOSE
+                       | l_new_function_open ',' expr_list2 L_FUNCTION_CLOSE
+                       | L_FUNCTION_OPEN comma_expr L_FUNCTION_CLOSE
                        | L_MAPPING_OPEN expr_list3 ']' ')'
                        | L_ARRAY_OPEN expr_list '}' ')'
                        | function_name '(' expr_list ')';
@@ -326,6 +333,7 @@ expr4    : ( (efun_override '(' expr_list ')'
                 | '(' '*' comma_expr ')' '(' expr_list ')'
              ) | expr3
             ) ( L_ARROW identifier
+                | L_DOT identifier
                 | '[' comma_expr L_RANGE comma_expr ']'
                 | '[' '<' comma_expr L_RANGE comma_expr ']'
                 | '[' '<' comma_expr L_RANGE '<' comma_expr ']'

@@ -1,3 +1,8 @@
 /cmake-build-debug/
 /.idea
+/build/
+/lpcfmt
+/parser/
+*.jar
+go.sum
 
