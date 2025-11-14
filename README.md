@@ -56,17 +56,50 @@ lpcfmt --version
 - `-d` - Display diffs instead of rewriting files
 - `--version` - Print version information
 
+## Preparing the Environment
+
+### Linux
+
+#### Fedora 43
+
+1. Install [SDKMAN!](https://sdkman.io/)
+
+  ```bash
+  curl -s "https://get.sdkman.io" | bash
+  ```
+  
+2. Install [Gradle](https://gradle.org/install/) 
+
+  ```bash
+  sdk install gradle
+  ```
+
 ## Building
 
 ### Go Version with ANTLR Parser (Current)
 
+#### Linux
+
 ```bash
+# Create the wrapper
+gradle wrapper
+
+# Make gradlew executable, if it is not already
+chmod +x gradlew
+
 # Generate Go parser from ANTLR grammar using Gradle
 ./gradlew generateGoParser
 
+# Download Go dependencies (writes go.sum) if this is a fresh clone
+go mod tidy
+
 # Build the formatter
 go build -o lpcfmt ./cmd/lpcfmt
+```
 
+#### Windows
+
+```bash
 # Or use Windows batch file
 gradlew.bat generateGoParser
 ```
